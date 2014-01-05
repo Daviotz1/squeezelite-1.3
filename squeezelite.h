@@ -20,7 +20,7 @@
 
 // make may define: PORTAUDIO, SELFPIPE or RESAMPLE to influence build
 
-#define VERSION "v1.3.1-338"
+#define VERSION "v1.3.2-346"
 
 // build detection
 #if defined(linux)
@@ -396,7 +396,7 @@ void buf_init(struct buffer *buf, size_t size);
 void buf_destroy(struct buffer *buf);
 
 // slimproto.c
-void slimproto(log_level level, char *server, u8_t mac[6], const char *name);
+void slimproto(log_level level, char *server, u8_t mac[6], const char *name, const char *namefile);
 void slimproto_stop(void);
 void wake_controller(void);
 
