@@ -476,9 +476,7 @@ static bool test_open(const char *device, u32_t *max_rate) {
 	PaStreamParameters outputParameters;
 	PaError err;
 	u32_t rates[] = { 384000, 352800, 192000, 176400, 96000, 88200, 48000, 44100, 0 };
-#ifndef PA18API
 	int i;
-#endif
 	int device_id;
 
 	if ((device_id = pa_device_id(device)) == -1) {
@@ -493,12 +491,18 @@ static bool test_open(const char *device, u32_t *max_rate) {
 	outputParameters.suggestedLatency =
 		output.latency ? (double)output.latency/(double)1000 : Pa_GetDeviceInfo(outputParameters.device)->defaultHighOutputLatency;
 	outputParameters.hostApiSpecificStreamInfo = NULL;
-
+#endif
 	// check supported sample rates
 	// Note this does not appear to work on OSX - it always returns paNoError...
 	for (i = 0; rates[i]; ++i) {
+#ifndef PA18API
 		err = Pa_OpenStream(&pa.stream, NULL, &outputParameters, (double)rates[i],
 			paFramesPerBufferUnspecified, paNoFlag, pa_callback, NULL);
+#else
+		err = Pa_OpenStream(&pa.stream, paNoDevice, 0, 0, NULL, outputParameters.device,
+			outputParameters.channelCount, outputParameters.sampleFormat, NULL, (double)rates[i],
+			paFramesPerBuffer, paNumberOfBuffers, paNoFlag, pa_callback, NULL);
+#endif
 		if (err == paNoError) {
 			Pa_CloseStream(pa.stream);
 			*max_rate = rates[i];
@@ -508,27 +512,6 @@ static bool test_open(const char *device, u32_t *max_rate) {
 
 	if (!rates[i]) {
 		LOG_WARN("no available rate found");
-		return false;
-	}
-
-#else
-	*max_rate = rates[6]; /* Default to 48000 for now */
-#endif
-
-#ifndef PA18API
-	if ((err = Pa_OpenStream(&pa.stream, NULL, &outputParameters, (double)*max_rate, paFramesPerBufferUnspecified,
-							 paNoFlag, pa_callback, NULL)) != paNoError) {
-#else
-	if ((err = Pa_OpenStream(&pa.stream, paNoDevice, 0, 0, NULL, outputParameters.device,
-		outputParameters.channelCount, outputParameters.sampleFormat, NULL, (double)*max_rate,
-		paFramesPerBuffer, paNumberOfBuffers, paNoFlag, pa_callback, NULL)) != paNoError) {
-#endif
-		LOG_WARN("error opening stream: %s", Pa_GetErrorText(err));
-		return false;
-	}
-
-	if ((err = Pa_CloseStream(pa.stream)) != paNoError) {
-		LOG_WARN("error closing stream: %s", Pa_GetErrorText(err));
 		return false;
 	}
 
