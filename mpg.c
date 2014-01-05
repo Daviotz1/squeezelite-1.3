@@ -102,12 +102,6 @@ static decode_state mpg_decode(void) {
 	bytes = min(bytes, READ_SIZE);
 	space = min(space, WRITE_SIZE);
 
-	if (stream.state <= DISCONNECT && bytes == 0) {
-		UNLOCK_O_direct;
-		UNLOCK_S;
-		return DECODE_COMPLETE;
-	}
-
 	if (m->use16bit) {
 		space = (space / BYTES_PER_FRAME) * 4;
 	}
@@ -163,14 +157,16 @@ static decode_state mpg_decode(void) {
 	);
 
 	UNLOCK_O_direct;
-	UNLOCK_S;
 
 	LOG_SDEBUG("write %u frames", size / BYTES_PER_FRAME);
 
-	if (ret == MPG123_DONE) {
+	if (ret == MPG123_DONE || (bytes == 0 && size == 0 && stream.state <= DISCONNECT)) {
+		UNLOCK_S;
 		LOG_INFO("stream complete");
 		return DECODE_COMPLETE;
 	}
+
+	UNLOCK_S;
 
 	if (ret == MPG123_ERR) {
 		LOG_WARN("Error");
