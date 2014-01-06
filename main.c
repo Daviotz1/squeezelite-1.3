@@ -22,7 +22,7 @@
 
 #include <signal.h>
 
-#define TITLE "Squeezelite " VERSION ", Copyright 2012, 2013 Adrian Smith."
+#define TITLE "Squeezelite " VERSION ", Copyright 2012-2014 Adrian Smith."
 
 static void usage(const char *argv0) {
 	printf(TITLE " See -t for license terms\n"
