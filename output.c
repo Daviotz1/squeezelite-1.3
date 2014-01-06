@@ -30,6 +30,9 @@
 #endif
 #if PORTAUDIO
 #include <portaudio.h>
+#ifdef WIN32
+#define snprintf _snprintf
+#endif
 #if OSX
 #include <pa_mac_core.h>
 #endif
