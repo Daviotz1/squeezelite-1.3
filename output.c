@@ -452,11 +452,15 @@ static int pa_device_id(const char *device) {
 	}
 
 #ifndef PA18API
+#define DEVICE_ID_MAXLEN 256
 	for (i = 0; i < Pa_GetDeviceCount(); ++i) {
+		char tmp[DEVICE_ID_MAXLEN];
+		snprintf(tmp, DEVICE_ID_MAXLEN, "%s [%s]", Pa_GetDeviceInfo(i)->name, Pa_GetHostApiInfo(Pa_GetDeviceInfo(i)->hostApi)->name);
+		if (!strncmp(tmp, device, len)) {
 #else
 	for (i = 0; i < Pa_CountDevices(); ++i) {
-#endif
 		if (!strncmp(Pa_GetDeviceInfo(i)->name, device, len)) {
+#endif
 			return i;
 		}
 	}
