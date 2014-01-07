@@ -20,7 +20,7 @@
 
 // make may define: PORTAUDIO, SELFPIPE or RESAMPLE to influence build
 
-#define VERSION "v1.3.3-355"
+#define VERSION "v1.3.3-356"
 
 // build detection
 #if defined(linux)

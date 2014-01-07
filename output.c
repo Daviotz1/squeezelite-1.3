@@ -30,7 +30,7 @@
 #endif
 #if PORTAUDIO
 #include <portaudio.h>
-#ifdef WIN32
+#if WIN
 #define snprintf _snprintf
 #endif
 #if OSX
