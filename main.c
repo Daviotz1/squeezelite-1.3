@@ -69,7 +69,7 @@ static void usage(const char *argv0) {
 		   "  \t\t\t phase_response = 0-100 (0 = minimum / 50 = linear / 100 = maximum)\n"
 #endif
 #if VISEXPORT
-		   "  -v \t\t\tVisulizer support\n"
+		   "  -v \t\t\tVisualiser support\n"
 #endif
 #if LINUX || SUN
 		   "  -z \t\t\tDaemonize\n"
