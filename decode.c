@@ -195,9 +195,14 @@ void decode_flush(void) {
 
 unsigned decode_newstream(unsigned sample_rate, unsigned max_sample_rate) {
 
+	// called with O locked to get sample rate for potentially processed output stream
+	// release O mutex during process_newstream as it can take some time
+
 	MAY_PROCESS(
 		if (decode.process) {
-			return process_newstream(&decode.direct, sample_rate, max_sample_rate);
+			UNLOCK_O;
+			sample_rate = process_newstream(&decode.direct, sample_rate, max_sample_rate);
+			LOCK_O;
 		}
 	);
 
