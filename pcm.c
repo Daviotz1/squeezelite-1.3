@@ -59,6 +59,9 @@ static u32_t sample_rate;
 static u32_t sample_size;
 static u32_t channels;
 static bool  bigendian;
+static bool  limit;
+static u32_t audio_left;
+static u32_t bytes_per_frame;
 
 typedef enum { UNKNOWN = 0, WAVE, AIFF } header_format;
 
@@ -100,6 +103,9 @@ void _check_header(void) {
 			if (format == WAVE && !memcmp(ptr, "data", 4)) {
 				ptr += 8;
 				_buf_inc_readp(streambuf, ptr - streambuf->readp);
+				audio_left = len;
+				LOG_INFO("audio size: %u", audio_left);
+				limit = true;
 				return;
 			}
 
@@ -108,6 +114,9 @@ void _check_header(void) {
 				// following 4 bytes is blocksize - ignored
 				ptr += 8 + 8;
 				_buf_inc_readp(streambuf, ptr + offset - streambuf->readp);
+				audio_left = len - 8 - offset;
+				LOG_INFO("audio size: %u", audio_left);
+				limit = true;
 				return;
 			}
 
@@ -150,10 +159,11 @@ void _check_header(void) {
 }
 
 static decode_state pcm_decode(void) {
-	size_t in, out;
+	unsigned bytes, in, out;
 	frames_t frames, count;
 	u32_t *optr;
 	u8_t  *iptr;
+	u8_t tmp[16];
 	
 	LOCK_S;
 
@@ -163,7 +173,7 @@ static decode_state pcm_decode(void) {
 
 	LOCK_O_direct;
 
-	in = min(_buf_used(streambuf), _buf_cont_read(streambuf)) / (channels * sample_size);
+	bytes = min(_buf_used(streambuf), _buf_cont_read(streambuf));
 
 	IF_DIRECT(
 		out = min(_buf_space(outputbuf), _buf_cont_write(outputbuf)) / BYTES_PER_FRAME;
@@ -172,7 +182,7 @@ static decode_state pcm_decode(void) {
 		out = process.max_in_frames;
 	);
 
-	if (stream.state <= DISCONNECT && in == 0) {
+	if ((stream.state <= DISCONNECT && bytes == 0) || (limit && audio_left == 0)) {
 		UNLOCK_O_direct;
 		UNLOCK_S;
 		return DECODE_COMPLETE;
@@ -189,10 +199,8 @@ static decode_state pcm_decode(void) {
 		IF_PROCESS(
 			out = process.max_in_frames;
 		);
+		bytes_per_frame = channels * sample_size;
 	}
-
-	frames = min(in, out);
-	frames = min(frames, MAX_DECODE_FRAMES);
 
 	IF_DIRECT(
 		optr = (u32_t *)outputbuf->writep;
@@ -200,8 +208,26 @@ static decode_state pcm_decode(void) {
 	IF_PROCESS(
 		optr = (u32_t *)process.inbuf;
 	);
-
 	iptr = (u8_t *)streambuf->readp;
+
+	in = bytes / bytes_per_frame;
+
+	//  handle frame wrapping round end of streambuf
+	//  - only need if resizing of streambuf does not avoid this, could occur in localfile case
+	if (in == 0 && bytes > 0 && _buf_used(streambuf) >= bytes_per_frame) {
+		memcpy(tmp, iptr, bytes);
+		memcpy(tmp + bytes, streambuf->buf, bytes_per_frame - bytes);
+		iptr = tmp;
+		in = 1;
+	}
+
+	frames = min(in, out);
+	frames = min(frames, MAX_DECODE_FRAMES);
+
+	if (limit && frames * bytes_per_frame > audio_left) {
+		LOG_INFO("reached end of audio");
+		frames = audio_left / bytes_per_frame;
+	}
 
 	count = frames * channels;
 
@@ -309,7 +335,11 @@ static decode_state pcm_decode(void) {
 
 	LOG_SDEBUG("decoded %u frames", frames);
 
-	_buf_inc_readp(streambuf, frames * channels * sample_size);
+	_buf_inc_readp(streambuf, frames * bytes_per_frame);
+
+	if (limit) {
+		audio_left -= frames * bytes_per_frame;
+	}
 
 	IF_DIRECT(
 		_buf_inc_writep(outputbuf, frames * BYTES_PER_FRAME);
@@ -329,6 +359,7 @@ static void pcm_open(u8_t size, u8_t rate, u8_t chan, u8_t endianness) {
 	sample_rate = sample_rates[rate - '0'];
 	channels    = chan - '0';
 	bigendian   = (endianness == '0');
+	limit       = false;
 
 	LOG_INFO("pcm size: %u rate: %u chan: %u bigendian: %u", sample_size, sample_rate, channels, bigendian);
 	buf_adjust(streambuf, sample_size * channels);
@@ -349,6 +380,6 @@ struct codec *register_pcm(void) {
 		pcm_decode,  // decode
 	};
 
-	LOG_INFO("using pcm");
+	LOG_INFO("using pcm to decode aif,pcm");
 	return &ret;
 }
