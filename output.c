@@ -798,8 +798,11 @@ static void *output_thread(void *arg) {
 			avail = snd_pcm_avail_update(pcmp);
 		}
 
-		// restrict avail in writei mode as write_buf is restricted to period_size
-		if (!alsa.mmap) {
+		// restrict avail to within sensible limits as alsa drivers can return erroneous large values
+		// in writei mode restrict to period_size due to size of write_buf
+		if (alsa.mmap) {
+			avail = min(avail, alsa.buffer_size);
+		} else {
 			avail = min(avail, alsa.period_size);
 		}
 
