@@ -1,7 +1,7 @@
 /* 
  *  Squeezelite - lightweight headless squeezeplay emulator for linux
  *
- *  (c) Adrian Smith 2012, triode1@btinternet.com
+ *  (c) Adrian Smith 2012-2015, triode1@btinternet.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
