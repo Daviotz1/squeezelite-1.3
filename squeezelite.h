@@ -20,7 +20,7 @@
 
 // make may define: PORTAUDIO, SELFPIPE or RESAMPLE to influence build
 
-#define VERSION "v1.3.11-523"
+#define VERSION "v1.3.12-531"
 
 // build detection
 #if defined(linux)
@@ -427,7 +427,7 @@ void stream_sock(u32_t ip, u16_t port, const char *header, size_t header_len, un
 bool stream_disconnect(void);
 
 // decode.c
-typedef enum { DECODE_STOPPED = 0, DECODE_RUNNING, DECODE_COMPLETE, DECODE_ERROR } decode_state;
+typedef enum { DECODE_STOPPED = 0, DECODE_READY, DECODE_RUNNING, DECODE_COMPLETE, DECODE_ERROR } decode_state;
 
 struct decodestate {
 	decode_state state;
