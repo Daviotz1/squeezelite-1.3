@@ -116,6 +116,9 @@ static void usage(const char *argv0) {
 #if VISEXPORT
 		   " VISEXPORT"
 #endif
+#if LINKALL
+		   " LINKALL"
+#endif
 		   "\n\n",
 		   argv0);
 }

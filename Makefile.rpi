@@ -1,0 +1,23 @@
+# Cross compile support - create a Makefile which defines these three variables and then includes this Makefile...
+OPTS = -DRESAMPLE -DFFMPEG -DVISEXPORT -DDSD -DIR -I./include
+CFLAGS  ?= -Wall -fPIC -s -O3 -march=armv6 -mfloat-abi=hard -mfpu=vfp $(OPTS)
+LDFLAGS ?= -s -lasound -lpthread -lm -ldl -lrt -Wl,-rpath,/usr/local/lib
+EXECUTABLE ?= squeezelite-rpi
+
+SOURCES = main.c slimproto.c utils.c buffer.c stream.c decode.c flac.c pcm.c mad.c vorbis.c output.c faad.c mpg.c resample.c process.c ffmpeg.c
+DEPS    = squeezelite.h slimproto.h
+
+OBJECTS = $(SOURCES:.c=.o)
+
+all: $(EXECUTABLE)
+
+$(EXECUTABLE): $(OBJECTS)
+	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+
+$(OBJECTS): $(DEPS)
+
+.c.o:
+	$(CC) $(CFLAGS) $< -c -o $@
+
+clean:
+	rm -f $(OBJECTS) $(EXECUTABLE)
